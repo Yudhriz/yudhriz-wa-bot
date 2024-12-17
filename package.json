@@ -1,0 +1,28 @@
+{
+  "name": "yudhriz-wa-bot",
+  "version": "1.0.0",
+  "description": "Simple WhatsApp Bot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "author": "Yudhriz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yudhriz/yudhriz-wa-bot"
+  },
+  "homepage": "https://github.com/yudhriz/yudhriz-wa-bot",
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.9",
+    "dotenv": "^16.4.7",
+    "qrcode-terminal": "^0.12.0",
+    "sequelize": "^6.37.5",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
