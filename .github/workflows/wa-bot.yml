@@ -39,8 +39,13 @@ jobs:
       - name: Run bot temporarily
         run: |
           npm run dev &
+          echo $! > temp_pid
           sleep 60
-          pkill -f "npm run dev"
+          kill $(cat temp_pid)
+
+      # Verify session files
+      - name: Verify session files
+        run: ls -la session
 
       # Save session as artifact
       - name: Save session
@@ -56,3 +61,7 @@ jobs:
       # Run the WhatsApp Bot with PM2
       - name: Run the WhatsApp Bot with PM2
         run: pm2 start ecosystem.config.js
+
+      # Verify PM2 process
+      - name: Verify PM2 process
+        run: pm2 list
