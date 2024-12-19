@@ -23,27 +23,25 @@ jobs:
         with:
           node-version: "20"
 
-      # Cache node_modules
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       # Install dependencies
       - name: Install dependencies
         run: npm install
-
-      # Install PM2 globally
-      - name: Install PM2
-        run: npm install -g pm2
 
       # Set environment variables
       - name: Set up environment variables
         run: echo "ALLOWED_NUMBERS=${{ secrets.ALLOWED_NUMBERS }}" >> $GITHUB_ENV
 
-      # Run the WhatsApp Bot using PM2
+      # Jalankan bot sementara untuk scan QR code
+      - name: Run bot to display QR code
+        run: |
+          npm run dev &
+          sleep 60 # Tunggu 60 detik agar QR code dapat discan
+          pkill -f "npm run dev" # Hentikan proses npm setelah scan selesai
+
+      # Install PM2
+      - name: Install PM2
+        run: npm install -g pm2
+
+      # Jalankan bot dengan PM2
       - name: Run the WhatsApp Bot with PM2
         run: pm2 start npm --name "whatsapp-bot" -- run dev
