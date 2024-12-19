@@ -25,7 +25,7 @@ async function startBot() {
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: true,
-    browser: [config.browserName, "Windows", "1.0"],
+    browser: [config.browserName, "Desktop", "1.0"],
   });
 
   // Event: Koneksi update

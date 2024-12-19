@@ -1,9 +1,10 @@
 class Controller {
   static async introduction(sock, message) {
     const sender = message.key.remoteJid;
-    await sock.sendMessage(sender, {
-      text: "Halo! Selamat datang di WhatsApp Bot saya.",
-    });
+    const reply = "Halo! Selamat datang di WhatsApp Bot saya.";
+
+    // Menggunakan reply untuk membalas pesan yang diterima
+    await sock.sendMessage(sender, { text: reply }, { quoted: message });
   }
 
   static async menu(sock, message) {
