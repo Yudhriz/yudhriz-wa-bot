@@ -1,10 +1,10 @@
 const sequelize = require("./db");
-const State = require("./Models/State");
-const Menu = require("./Models/Menu");
+const { State, Menu, Session } = require("./Models");
 
 const models = {
   State: State.init(sequelize),
   Menu: Menu.init(sequelize),
+  Session: Session.init(sequelize),
 };
 
 const connectDB = async () => {
