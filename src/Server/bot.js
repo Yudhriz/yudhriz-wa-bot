@@ -3,10 +3,14 @@ const {
   useMultiFileAuthState,
   DisconnectReason,
 } = require("@whiskeysockets/baileys");
-const qrcode = require("qrcode-terminal");
+const qrcodeTerminal = require("qrcode-terminal"); // Untuk terminal
+const qrcode = require("qrcode"); // Untuk Base64
 const fs = require("fs");
 const path = require("path");
-const { addSession, findSessionById } = require("../Services/SessionService"); // Import layanan sesi
+const {
+  addSession,
+  findSessionById,
+} = require("../Services/API/SessionService"); // Import layanan sesi
 const routes = require("../Handler/routes"); // Daftar routes
 const routerHandler = require("../Handler/routesHandler"); // Logika router
 const config = require("../Config/Config"); // Import konfigurasi
@@ -26,7 +30,7 @@ async function startBot() {
 
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: true,
+    printQRInTerminal: false,
     browser: [config.browserName, "Desktop", "1.0"],
   });
 
@@ -36,28 +40,30 @@ async function startBot() {
 
     if (qr) {
       console.log("🔗 Scan QR Code ini untuk menyambungkan bot:");
-      qrcode.generate(qr, { small: true });
-      const qrData = `data:image/png;base64,${Buffer.from(qr).toString(
-        "base64"
-      )}`;
-      await addSession("default", "pending", qrData);
-      logger.info({ action: "save_qr", message: "QR Code saved in session." });
+      qrcodeTerminal.generate(qr, { small: true }); // Tampilkan di terminal
+
+      console.log("🔄 Konversi QR Code ke Base64...");
+      const qrBase64 = await qrcode.toDataURL(qr); // Konversi QR ke Base64
+
+      await addSession("default", "pending", qrBase64); // Simpan QR ke database
     }
 
     if (connection === "open") {
       console.log("✅ Bot berhasil terhubung ke WhatsApp!");
       logger.info("✅ Bot berhasil terhubung ke WhatsApp!");
-
-      // Simpan sesi ke database setelah terhubung
-      await addSession("default", "connected", JSON.stringify(state.creds));
+      await addSession(
+        "default",
+        "connected",
+        null,
+        JSON.stringify(state.creds)
+      ); // Perbarui status sesi, tanpa QR
     } else if (connection === "close") {
-      const disconnectReason = lastDisconnect?.error?.output?.statusCode;
-
-      if (disconnectReason === DisconnectReason.loggedOut) {
+      const reason = lastDisconnect?.error?.output?.statusCode;
+      if (reason === DisconnectReason.loggedOut) {
         console.log(
           "❌ Sesi telah ditutup. Hapus folder 'session' dan scan ulang QR Code untuk menyambungkan ulang."
         );
-        process.exit(1); // Keluar dari proses agar tidak restart otomatis
+        await deleteSession("default");
       } else {
         console.log("⚠️ Koneksi terputus. Mencoba menyambung ulang...");
         startBot(); // Restart bot jika koneksi terputus selain loggedOut
