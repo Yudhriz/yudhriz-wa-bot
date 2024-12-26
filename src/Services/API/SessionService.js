@@ -1,20 +1,38 @@
 const Session = require("../../Databases/Models/Session");
 const logger = require("../../Utils/logger");
+const qrcode = require("qrcode");
 
 // Menambahkan atau memperbarui sesi
-const addSession = async (sessionId, status = "pending", qr = null) => {
+const addSession = async (
+  sessionId,
+  status = "pending",
+  qr = null,
+  credentials = null
+) => {
   try {
+    // Cari sesi berdasarkan ID
     const existingSession = await Session.findOne({ where: { sessionId } });
+
     if (existingSession) {
-      await existingSession.update({ status, qr });
+      // Update hanya kolom yang diberikan
+      const updates = { status };
+      if (qr !== null) updates.qr = qr;
+      if (credentials !== null) updates.credentials = credentials;
+
+      await existingSession.update(updates);
       logger.info({
         action: "update_session",
         sessionId,
         status,
+        qr: qr ? "QR diperbarui" : "QR tidak diubah",
+        credentials: credentials
+          ? "Kredensial diperbarui"
+          : "Kredensial tidak diubah",
         message: "Session updated successfully.",
       });
     } else {
-      await Session.create({ sessionId, status, qr });
+      // Jika sesi baru, tambahkan ke database
+      await Session.create({ sessionId, status, qr, credentials });
       logger.info({
         action: "add_session",
         sessionId,
@@ -76,6 +94,30 @@ const findSessionById = async (sessionId) => {
   }
 };
 
+// Membuat QR baru untuk sesi
+const generateNewQR = async (sessionId) => {
+  try {
+    // Buat QR Code baru
+    const qr = `Session-${sessionId}-${Date.now()}`;
+    const qrCode = await qrcode.toDataURL(qr);
+
+    logger.info({
+      action: "generate_new_qr",
+      sessionId,
+      message: "New QR code generated successfully.",
+    });
+
+    return qrCode;
+  } catch (error) {
+    logger.error({
+      action: "generate_new_qr_error",
+      sessionId,
+      error: error.message,
+    });
+    throw error;
+  }
+};
+
 // Menghapus sesi berdasarkan ID
 const deleteSession = async (sessionId) => {
   try {
@@ -108,8 +150,7 @@ const deleteSession = async (sessionId) => {
 // Memeriksa apakah sesi ada
 const sessionExists = async (sessionId) => {
   try {
-    const session = await findSessionById(sessionId);
-    const exists = !!session;
+    const exists = (await Session.count({ where: { sessionId } })) > 0;
     logger.info({
       action: "check_session_exists",
       sessionId,
@@ -131,6 +172,7 @@ module.exports = {
   addSession,
   listSessions,
   findSessionById,
+  generateNewQR,
   deleteSession,
   sessionExists,
 };

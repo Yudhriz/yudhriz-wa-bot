@@ -4,10 +4,9 @@ const {
   findSessionById,
   deleteSession,
   sessionExists,
+  generateNewQR,
 } = require("../../Services/API/SessionService");
 const logger = require("../../Utils/logger");
-const path = require("path");
-const fs = require("fs");
 
 // Mengembalikan daftar semua sesi
 const list = async (req, res) => {
@@ -59,11 +58,19 @@ const add = async (req, res) => {
       return res.status(400).json({ error: "Session ID is required." });
     }
 
-    await addSession(sessionId);
-    res
-      .status(201)
-      .json({ message: `Session '${sessionId}' added successfully.` });
+    const qrCode = await generateNewQR(sessionId);
+    await addSession(sessionId, "pending", qrCode);
+
+    res.status(201).json({
+      message: `Session '${sessionId}' added successfully.`,
+      qr: qrCode,
+    });
   } catch (error) {
+    logger.error({
+      action: "add_session_error",
+      sessionId,
+      error: error.message,
+    });
     res.status(500).json({ error: "Failed to add session." });
   }
 };
@@ -79,34 +86,23 @@ const addSSE = async (req, res) => {
     Connection: "keep-alive",
   });
 
-  let qrData = null;
-
   try {
-    // Simpan QR Code dalam variabel lokal
-    const botHandler = async (update) => {
-      const { qr } = update;
-      if (qr) {
-        qrData = `data:image/png;base64,${Buffer.from(qr).toString("base64")}`;
-        res.write(
-          `data: ${JSON.stringify({
-            qr: qrData,
-            message: "QR Code generated.",
-          })}\n\n`
-        );
-        logger.info({
-          action: "generate_qr",
-          sessionId,
-          message: "QR Code sent to client.",
-        });
-      }
-    };
+    // Gunakan logika yang sama untuk menambahkan sesi dan menghasilkan QR Code
+    const qrCode = await generateNewQR(sessionId);
 
-    // Tambahkan session dengan QR Code
-    await addSession(sessionId);
-    // Simpan status QR Code dan koneksi
+    // Kirim QR Code ke klien
     res.write(
-      `data: ${JSON.stringify({ message: "Session added successfully." })}\n\n`
+      `data: ${JSON.stringify({
+        qr: qrCode,
+        message: "QR Code generated.",
+      })}\n\n`
     );
+
+    logger.info({
+      action: "add_session_sse_success",
+      sessionId,
+      message: "QR Code sent via SSE.",
+    });
   } catch (error) {
     logger.error({
       action: "add_session_sse_error",
