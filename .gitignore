@@ -1,4 +1,14 @@
+# Node.js dependencies
 node_modules
+
+# Session data
 session
+
+# Environment variables
 .env
+
+# Application logs
 logs
+
+# SQLite database
+src/Databases/data-bot.sqlite
